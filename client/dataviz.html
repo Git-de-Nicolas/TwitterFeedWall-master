@@ -9,44 +9,28 @@
           href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
           integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z"
           crossorigin="anonymous">
-
-    <!-- JS, Popper.js, and jQuery -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
-            integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
-            crossorigin="anonymous">
-    </script>
-
-    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"
-            integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN"
-            crossorigin="anonymous">
-    </script>
-
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
-            integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV"
-            crossorigin="anonymous">
-    </script>
-
+    <!-- STYLE.CSS -->
     <link rel="stylesheet" href="source/css/tweets.css">
-
+    <!-- WIDGET TWITTER ? -->
     <script src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
-
+    <!-- SCRIPT CHARTS -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
-
 </head>
+
 <body id='colorWrap'>
-<h1>hello viz</h1>
+<h1 class="h1 text-center"> Graphique des Températures / Humidité </h1>
 <canvas id="myChart"></canvas>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
     var ctx = document.getElementById('myChart').getContext('2d');
     var socket = io();
+
     fetch('./api/capteurs/Hum')
         .then(
             function (response) {
                 if (response.status !== 200) {
-                    console.log('Looks like there was a problem. Status Code: ' +
-                        response.status);
+                    console.log('Looks like there was a problem. Status Code: ' + response.status);
                     return;
                 }
 
@@ -55,10 +39,12 @@
                     console.log(data);
                     var xs = [];
                     var ys = [];
+
                     data.forEach(function (valeurs) {
                         xs.push(valeurs.timestamp);
                         ys.push(valeurs.value);
                     })
+
                     var chart = new Chart(ctx, {
                         // The type of chart we want to create
                         type: 'line',
@@ -96,6 +82,7 @@
         console.log(msg);
         document.getElementById("colorWrap").style.backgroundColor = msg.newcolor;
     });
+
     socket.on('tempChange', function (msg) {
         console.log(msg);
         // document.getElementById("colorWrap").style.backgroundColor = msg.newcolor;

@@ -1,5 +1,3 @@
-// index.js == server.js
-
 const Twit = require('twit');
 const express = require('express');
 const app = express();
@@ -8,6 +6,14 @@ const io = require('socket.io')(server);
 const Sensor = require('./server/models/sensors.js');
 const mongoose = require('mongoose');
 
+// Identifiants Twitter
+let Tweet = new Twit({
+    consumer_key: '',
+    consumer_secret: '',
+    access_token: '',
+    access_token_secret: ''
+});
+
 mongoose.connect('mongodb://localhost:27017/capteurs', {
     useNewUrlParser: true,
     useUnifiedTopology: true
@@ -15,13 +21,30 @@ mongoose.connect('mongodb://localhost:27017/capteurs', {
 
 app.use('/source', express.static(__dirname + '/client/source/'));
 
-// Identifiants Twitter
-let Tweet = new Twit({
-    consumer_key: 'ctxEnpYHuvYJlWmrZxrKto767',
-    consumer_secret: 'MeAFPHnUMRZFHpLG82pZzjIj4s7wq6zCEwlC0V36XiM7fNHBUR',
-    access_token: '1300423028774494208-tXXUnTGHS5WDf8DTjkhNCM28ul9que',
-    access_token_secret: 'bMrCwSsxceoDsYgyzLkRntAIuBoPj8ftPaCCi3cSw6VgY'
+//- Routes
+app.get('/', (req, res) => { // HOME
+    res.sendFile(__dirname + "/client/index.html");
 });
+
+app.get('/tweets', (req, res) => { // MUR DE TWEETS
+    res.sendFile(__dirname + "/client/tweets.html");
+});
+
+app.get('/dataviz', (req, res) => { // GRAPHIQUE
+    res.sendFile(__dirname + '/client/dataviz.html');
+});
+
+app.get('/api/capteurs/:stype', function (req, res) {
+
+    Sensor.find({"sensor_type": req.params.stype}).exec(function (err, sensorList) {
+        if (err) {
+            console.log(err);
+        }
+        console.log(sensorList);
+        res.json(sensorList);
+    });
+});
+
 
 //- Paramètres de recherche : "javascript" et "iot"
 let stream = Tweet.stream('statuses/filter', {
@@ -49,13 +72,14 @@ stream.on('tweet', (tweet) => {
                     })
                 }
                 if (hash.text === 'temp') {
-                    let str = tweet.text.split(" ");
+                    var str = tweet.text.split(" ");
                     str.forEach(function (word) {
                         if (word.charAt(0) !== '#') {
-                            let newObj = {
+
+                            var newObj = {
                                 name: "Température Sensor",
                                 sensor_type: 'Temp',
-                                value: word
+                                value: word,
                             }
                             const toCreate = new Sensor(newObj);
 
@@ -68,33 +92,34 @@ stream.on('tweet', (tweet) => {
                         }
                     })
                 }
+                if (hash.text === 'hum') {
+                    var str = tweet.text.split(" ");
+                    str.forEach(function (word) {
+                        if (word.charAt(0) !== '#') {
+                            var newObj = {
+                                name: "Humidity Sensor",
+                                sensor_type: 'Hum',
+                                value: word,
+                            }
+                            const toCreate = new Sensor(newObj);
+
+                            toCreate.save().then(function (newValue) {
+                                io.emit('humChange', {
+                                    'newHum': word
+                                });
+                                console.log(newValue);
+                            });
+                        }
+                    })
+                }
             })
         }
     }
 });
 
-//- Routes
-app.get('/', (req, res) => {
-    res.sendFile(__dirname + "/client/index.html");
-});
 
-app.get('/tweets', (req, res) => {
-    res.sendFile(__dirname + "/client/tweets.html");
-});
-
-app.get('/dataviz', (req, res) => {
-    res.sendFile((__dirname + '/client/dataviz.html'));
-});
-
-app.get('/api/sensors/:stype', function (req, res) {
-
-    Sensor.find({"sensor_type": req.params.stype}).exec(function (err, sensorList) {
-        if (err) {
-            console.log(err);
-        }
-        console.log(sensorList);
-        res.json(sensorList);
-    });
+stream.on('error', function (error) {
+    throw error;
 });
 
 //- Serveur :
