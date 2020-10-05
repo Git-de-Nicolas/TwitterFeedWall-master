@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title> Graphique Données - TP IOT - Javascript </title>
+
+    <!-- BOOTSTRAP -->
+    <link rel="stylesheet"
+          href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+          integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z"
+          crossorigin="anonymous">
+
+    <!-- JS, Popper.js, and jQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+            integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+            crossorigin="anonymous">
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"
+            integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN"
+            crossorigin="anonymous">
+    </script>
+
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
+            integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV"
+            crossorigin="anonymous">
+    </script>
+
+    <link rel="stylesheet" href="source/css/tweets.css">
+
+    <script src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+
+</head>
+<body id='colorWrap'>
+<h1>hello viz</h1>
+<canvas id="myChart"></canvas>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    var ctx = document.getElementById('myChart').getContext('2d');
+    var socket = io();
+    fetch('./api/capteurs/Hum')
+        .then(
+            function (response) {
+                if (response.status !== 200) {
+                    console.log('Looks like there was a problem. Status Code: ' +
+                        response.status);
+                    return;
+                }
+
+                // Examine the text in the response
+                response.json().then(function (data) {
+                    console.log(data);
+                    var xs = [];
+                    var ys = [];
+                    data.forEach(function (valeurs) {
+                        xs.push(valeurs.timestamp);
+                        ys.push(valeurs.value);
+                    })
+                    var chart = new Chart(ctx, {
+                        // The type of chart we want to create
+                        type: 'line',
+                        // The data for our dataset
+                        data: {
+                            labels: xs,
+                            datasets: [{
+                                label: 'My First dataset',
+                                backgroundColor: 'rgb(255, 99, 132)',
+                                borderColor: 'rgb(255, 99, 132)',
+                                data: ys
+                            }]
+                        },
+                        // Configuration options go here
+                        options: {}
+                    });
+                    console.log(chart);
+
+                    socket.on('humChange', function (msg) {
+                        console.log(msg);
+                        chart.data.labels.push(Date.now());
+                        chart.data.data.push(msg.newHum);
+                        chart.update();
+                        // document.getElementById("colorWrap").style.backgroundColor = msg.newcolor;
+                    });
+                });
+            }
+        )
+        .catch(function (err) {
+            console.log('Fetch Error :-S', err);
+        });
+
+
+    socket.on('colorChange', function (msg) {
+        console.log(msg);
+        document.getElementById("colorWrap").style.backgroundColor = msg.newcolor;
+    });
+    socket.on('tempChange', function (msg) {
+        console.log(msg);
+        // document.getElementById("colorWrap").style.backgroundColor = msg.newcolor;
+    });
+
+</script>
+</body>
+</html>
